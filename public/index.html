@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion Boutique - Test API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 0 20px;
+            background: #f4f6f9;
+        }
+
+        h1,
+        h2 {
+            color: #333;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 8px;
+            margin-right: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .btn-delete {
+            background: #dc3545;
+        }
+
+        .btn-delete:hover {
+            background: #a71d2a;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>🛒 Gestion des Produits</h1>
+
+    <!-- Formulaire d'ajout (Teste POST et le middleware validateProduit) -->
+    <div class="card">
+        <h2>Ajouter un produit</h2>
+        <form id="form-ajout">
+            <input type="text" id="nom" placeholder="Nom du produit" required>
+            <input type="number" id="prix" placeholder="Prix" required>
+            <input type="number" id="stock" placeholder="Stock" value="1">
+            <button type="submit">Ajouter</button>
+        </form>
+        <p id="message-erreur" class="error"></p>
+    </div>
+
+   
+
+    <!-- Liste des produits -->
+    <div class="card">
+        <h2>Liste des produits en base</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nom</th>
+                    <th>Prix</th>
+                    <th>Stock</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="liste-produits"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const API_URL = '/api/produits';
+
+
+        // 1. Charger et afficher les produits (GET)
+        async function chargerProduits() {
+
+            // Construction de l'URL avec les paramètres de recherche
+          
+            const reponse = await fetch(`${API_URL}`);
+            const produits = await reponse.json();
+
+            const tbody = document.getElementById('liste-produits');
+            tbody.innerHTML = ''; // Vide le tableau avant de le remplir
+
+            produits.forEach(p => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.id}</td>
+                        <td>${p.nom}</td>
+                        <td>${p.prix} FCFA</td>
+                        <td>${p.stock}</td>
+                        <td>
+                            <button class="btn-delete" onclick="supprimerProduit(${p.id})">Supprimer</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // 2. Ajouter un produit (POST)
+        document.getElementById('form-ajout').addEventListener('submit', async (e) => {
+            e.preventDefault(); // Empêche le rechargement de la page
+            const erreurEl = document.getElementById('message-erreur');
+            erreurEl.textContent = '';
+
+            const nouveauProduit = {
+                nom: document.getElementById('nom').value,
+                prix: Number(document.getElementById('prix').value),
+                stock: Number(document.getElementById('stock').value)
+            };
+
+            const reponse = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nouveauProduit)
+            });
+
+            const data = await reponse.json();
+
+            if (!reponse.ok) {
+                // Affiche le message renvoyé par votre middleware validateProduit !
+                erreurEl.textContent = data.message;
+            } else {
+                document.getElementById('form-ajout').reset();
+                chargerProduits(); // Rafraîchit la liste
+            }
+        });
+
+        // 3. Supprimer un produit (DELETE)
+        async function supprimerProduit(id) {
+            await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
+            chargerProduits(); // Rafraîchit la liste
+        }
+
+        // Charger la liste dès l'ouverture de la page
+        chargerProduits();
+    </script>
+</body>
+
+</html>
